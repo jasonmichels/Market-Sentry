@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Phone</title>
+</head>
+<body>
+<h2>Enter verification code</h2>
+<form action="/login/verify?phone={{.Phone}}" method="POST">
+    Code: <input name="code" type="text"/>
+    <button type="submit">Verify</button>
+</form>
+</body>
+</html>

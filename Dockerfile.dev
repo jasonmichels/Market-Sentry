@@ -1,0 +1,10 @@
+# Minimal image for local usage (already-built binary + static files)
+FROM gcr.io/distroless/base
+
+EXPOSE 8080
+
+# We'll assume you do "go build" on your host machine before building this image.
+COPY ./marketsentry /marketsentry
+COPY ./web /web
+
+ENTRYPOINT ["/marketsentry"]

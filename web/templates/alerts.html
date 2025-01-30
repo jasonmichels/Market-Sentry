@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Alerts</title>
+</head>
+<body>
+<h1>Active Alerts</h1>
+{{range .ActiveAlerts}}
+<p>Alert ID: {{.ID}} - {{.Symbol}} {{if .Above}}above{{else}}below{{end}} {{.Threshold}}</p>
+{{end}}
+
+<h1>Triggered Alerts</h1>
+{{range .TriggeredAlerts}}
+<p>Triggered ID: {{.ID}} - {{.Symbol}}</p>
+{{end}}
+
+<h1>Notifications</h1>
+{{range .Notifications}}
+<p>Notification ID: {{.AlertID}} - {{.Timestamp}} - {{.Message}}</p>
+{{end}}
+
+<hr/>
+<h2>Create New Alert</h2>
+<form action="/alerts" method="POST">
+    <label>Asset Type:</label>
+    <select name="assetType">
+        <option value="crypto">Crypto</option>
+        <option value="metal">Metal</option>
+        <option value="stock">Stock</option>
+    </select>
+    <br/>
+    <label>Symbol:</label>
+    <input name="symbol" type="text" value="bitcoin"/>
+    <br/>
+    <label>Threshold:</label>
+    <input name="threshold" type="text" value="20000"/>
+    <br/>
+    <label>Direction:</label>
+    <select name="direction">
+        <option value="above">Above</option>
+        <option value="below">Below</option>
+    </select>
+    <br/>
+    <button type="submit">Create Alert</button>
+</form>
+</body>
+</html>
