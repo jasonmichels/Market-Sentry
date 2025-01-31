@@ -2,6 +2,7 @@ package prices
 
 import (
 	"fmt"
+	"github.com/jasonmichels/Market-Sentry/internal/sse"
 	"log"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 
 // TriggerAlerts checks each user's ActiveAlerts against the current prices
 // and moves triggered alerts + builds notifications.
-func TriggerAlerts(store *storage.MemoryStore) {
+func TriggerAlerts(store *storage.MemoryStore, hub *sse.SSEHub) {
 	// We'll need the prices to check the conditions
 	store.Mu.RLock()
 	cryptoPrices := store.Crypto
@@ -92,6 +93,10 @@ func TriggerAlerts(store *storage.MemoryStore) {
 		notes := notificationsMap[phone]
 		user.Notifications = append(user.Notifications, notes...)
 	}
+
+	// >>> BROADCAST after updates done
+	hub.Broadcast(`{"type":"alertsUpdated","message":"Alerts updated"}`)
+
 }
 
 // getPriceForAlert returns the relevant price for the alert from the store

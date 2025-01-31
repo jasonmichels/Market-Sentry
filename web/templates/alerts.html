@@ -20,6 +20,21 @@
 {{end}}
 
 <hr/>
+
+<h1>Active Alerts</h1>
+<div id="active-alerts"></div>
+
+<h1>Triggered Alerts</h1>
+<div id="triggered-alerts"></div>
+
+<h1>Notifications</h1>
+<div id="notifications"></div>
+
+<p>Last update: <span id="last-update"></span></p>
+<p id="status" style="color:red;"></p>
+
+<hr/>
+
 <h2>Create New Alert</h2>
 <form action="/alerts" method="POST">
     <label>Asset Type:</label>
@@ -99,5 +114,63 @@
     <br/>
     <button type="submit">Create Alert</button>
 </form>
+<script>
+    function fetchAlerts() {
+        fetch('/alerts')  // GET /alerts
+            .then(resp => {
+                if (!resp.ok) throw new Error('Failed to fetch alerts. Status=' + resp.status)
+                return resp.text()
+            })
+            .then(html => {
+                // The entire alerts page HTML will come back.
+                // In a real app, you might want a JSON endpoint instead,
+                // but let's do a quick hack:
+                // We'll parse the HTML to extract the relevant parts (Active Alerts, Triggered, etc.)
+                // Easiest might be to re-render entire #active-alerts / #triggered-alerts
+                // but you'd need to do some DOM parsing or have a dedicated JSON endpoint.
+                document.getElementById('status').textContent = ''
+
+                // Simple approach: if you had a separate endpoint that returned JSON:
+                //   .then(alertsData => {
+                //       updateAlerts(alertsData.active, alertsData.triggered, alertsData.notifications)
+                //   })
+                // For now, let's just set some "last update" timestamp:
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString()
+            })
+            .catch(err => {
+                console.error('Fetch Alerts Error:', err)
+                document.getElementById('status').textContent = 'Error fetching alerts. Check console.'
+            })
+    }
+
+    // 1) Establish SSE connection
+    const evtSource = new EventSource('/alerts/stream');
+
+    // 2) On message, re-fetch alerts
+    evtSource.onmessage = (event) => {
+        console.log('SSE event received:', event.data);
+        let data;
+        try {
+            data = JSON.parse(event.data);
+        } catch(e) {
+            console.error('Invalid JSON from SSE:', e);
+            return;
+        }
+
+        // If type=alertsUpdated, refresh
+        if (data.type === 'alertsUpdated') {
+            fetchAlerts();
+        }
+    };
+
+    // 3) Handle errors
+    evtSource.onerror = (event) => {
+        console.error('SSE Error:', event);
+        document.getElementById('status').textContent = 'Connection lost! Try refreshing.';
+    };
+
+    // 4) Initial fetch
+    fetchAlerts();
+</script>
 </body>
 </html>

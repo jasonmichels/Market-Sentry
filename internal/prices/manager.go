@@ -1,6 +1,7 @@
 package prices
 
 import (
+	"github.com/jasonmichels/Market-Sentry/internal/sse"
 	"log"
 	"sync"
 
@@ -12,7 +13,7 @@ import (
 //  2. Fetch them from relevant APIs
 //  3. Store them
 //  4. Trigger any alerts that meet conditions
-func UpdatePriceStore(store *storage.MemoryStore) {
+func UpdatePriceStore(store *storage.MemoryStore, hub *sse.SSEHub) {
 	log.Println("[Price Fetch] Starting update...")
 
 	// 1) Gather needed symbols from the store
@@ -95,7 +96,7 @@ func UpdatePriceStore(store *storage.MemoryStore) {
 	log.Println("[Price Fetch] Update complete. Checking alerts...")
 
 	// 4) Trigger any alerts if necessary
-	TriggerAlerts(store)
+	TriggerAlerts(store, hub)
 }
 
 // gatherSymbols scans all users’ ActiveAlerts to find needed symbols for each asset type

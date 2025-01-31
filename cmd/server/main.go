@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/jasonmichels/Market-Sentry/internal/sse"
 	"log"
 	"net/http"
 	"time"
@@ -23,16 +24,21 @@ func main() {
 	// Initialize global in-memory store
 	store := storage.NewMemoryStore()
 
+	// Create SSE hub
+	hub := sse.NewSSEHub()
+
 	// Start background goroutine to fetch prices every 10 min
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
 		for {
 			// We can fetch crypto, metals, stocks in parallel or sequentially
-			prices.UpdatePriceStore(store)
+			prices.UpdatePriceStore(store, hub)
 			<-ticker.C
 		}
 	}()
+	// SSE endpoint
+	http.Handle("/alerts/stream", hub)
 
 	// Set up HTTP handlers
 	// You can also use a router like gorilla/mux if you prefer, but let's keep it minimal.
