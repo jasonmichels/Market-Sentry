@@ -42,6 +42,8 @@ func main() {
 
 	// Serve static files if needed
 	// http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
+	// In main.go, before http.ListenAndServe
+	http.Handle("/data/", http.StripPrefix("/data/", http.FileServer(http.Dir("./web/data"))))
 
 	// Public routes
 	http.HandleFunc("/", makeHandler(store, handleHome))

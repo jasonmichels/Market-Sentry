@@ -25,15 +25,71 @@
     <label>Asset Type:</label>
     <select name="assetType">
         <option value="crypto">Crypto</option>
-        <option value="metal">Metal</option>
-        <option value="stock">Stock</option>
     </select>
     <br/>
-    <label>Symbol:</label>
-    <input name="symbol" type="text" value="bitcoin"/>
-    <br/>
+    <label>Symbol (search by name or symbol):</label>
+    <input id="cryptoSearch" oninput="searchCoins()" placeholder="Search a coin..." type="text"/>
+    <!-- We'll store the actual chosen coin ID in a hidden field named 'symbol' -->
+    <input id="cryptoSymbol" name="symbol" type="hidden"/>
+
+    <!-- A simple unstyled <ul> to show results as the user types -->
+    <ul id="searchResults" style="border:1px solid #ccc; max-height:150px; overflow:auto; padding:0;"></ul>
+
+    <script>
+        let allCoins = [];
+
+        // 1) Fetch coins.json on page load
+        fetch('/data/coins.json')
+            .then(response => response.json())
+            .then(data => {
+                allCoins = data;
+                console.log("Loaded", allCoins.length, "coins from coins.json");
+            })
+            .catch(err => console.error("Error loading coins:", err));
+
+        // 2) Filter coins as user types, show matches
+        function searchCoins() {
+            const query = document.getElementById('cryptoSearch').value.toLowerCase();
+            const resultsList = document.getElementById('searchResults');
+            resultsList.innerHTML = ''; // clear old results
+
+            if (!query) {
+                // If user cleared input, also clear hidden symbol value
+                document.getElementById('cryptoSymbol').value = '';
+                return;
+            }
+
+            // We'll limit to e.g. 10 matches
+            const filtered = allCoins
+                .filter(c => c.name.toLowerCase().includes(query) || c.symbol.toLowerCase().includes(query))
+                .slice(0, 10);
+
+            filtered.forEach(coin => {
+                const li = document.createElement('li');
+                li.style.listStyle = 'none';
+                li.style.padding = '4px';
+                li.style.cursor = 'pointer';
+
+                // For display, we might do something like: "Bitcoin (btc)"
+                li.textContent = `${coin.name} (${coin.symbol})`;
+
+                // When a user clicks a result:
+                li.onclick = () => {
+                    // Set the visible text box to the coin name (just for reference)
+                    document.getElementById('cryptoSearch').value = coin.name;
+                    // But set the hidden "symbol" input to coin.id so it gets posted
+                    document.getElementById('cryptoSymbol').value = coin.id;
+                    // Clear the dropdown
+                    resultsList.innerHTML = '';
+                };
+
+                resultsList.appendChild(li);
+            });
+        }
+    </script>
+
     <label>Threshold:</label>
-    <input name="threshold" type="text" value="20000"/>
+    <input name="threshold" type="text" value=""/>
     <br/>
     <label>Direction:</label>
     <select name="direction">

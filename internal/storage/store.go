@@ -63,14 +63,14 @@ func (ms *MemoryStore) GetOrCreateUser(phone string) *User {
 	return newUser
 }
 
-// Thread-safe retrieval
+// GetUser Thread-safe retrieval
 func (ms *MemoryStore) GetUser(phone string) *User {
 	ms.Mu.RLock()
 	defer ms.Mu.RUnlock()
 	return ms.Users[phone]
 }
 
-// Example: A function that lists all users (just to show RLock usage)
+// ListUsers Example: A function that lists all users (just to show RLock usage)
 func (ms *MemoryStore) ListUsers() []*User {
 	ms.Mu.RLock()
 	defer ms.Mu.RUnlock()
