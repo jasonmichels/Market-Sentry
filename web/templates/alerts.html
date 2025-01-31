@@ -1,152 +1,262 @@
 <!DOCTYPE html>
-<html>
+{{define "alertsPage"}}
+<html lang="en">
 <head>
     <title>Your Alerts</title>
 </head>
-<body>
-<h1>Active Alerts</h1>
-{{range .ActiveAlerts}}
-<p>Alert ID: {{.ID}} - {{.Symbol}} {{if .Above}}above{{else}}below{{end}} {{.Threshold}}</p>
-{{end}}
-
-<h1>Triggered Alerts</h1>
-{{range .TriggeredAlerts}}
-<p>Triggered ID: {{.ID}} - {{.Symbol}}</p>
-{{end}}
-
-<h1>Notifications</h1>
-{{range .Notifications}}
-<p>Notification ID: {{.AlertID}} - {{.Timestamp}} - {{.Message}}</p>
-{{end}}
-
-<hr/>
-
-<h1>Active Alerts</h1>
-<div id="active-alerts"></div>
-
-<h1>Triggered Alerts</h1>
-<div id="triggered-alerts"></div>
-
-<h1>Notifications</h1>
-<div id="notifications"></div>
-
-<p>Last update: <span id="last-update"></span></p>
-<p id="status" style="color:red;"></p>
-
-<hr/>
-
-<h2>Create New Alert</h2>
-<form action="/alerts" method="POST">
-    <label>Asset Type:</label>
-    <select name="assetType">
-        <option value="crypto">Crypto</option>
-    </select>
-    <br/>
-    <label>Symbol (search by name or symbol):</label>
-    <input id="cryptoSearch" oninput="searchCoins()" placeholder="Search a coin..." type="text"/>
-    <!-- We'll store the actual chosen coin ID in a hidden field named 'symbol' -->
-    <input id="cryptoSymbol" name="symbol" type="hidden"/>
-
-    <!-- A simple unstyled <ul> to show results as the user types -->
-    <ul id="searchResults" style="border:1px solid #ccc; max-height:150px; overflow:auto; padding:0;"></ul>
-
-    <script>
-        let allCoins = [];
-
-        // 1) Fetch coins.json on page load
-        fetch('/data/coins.json')
-            .then(response => response.json())
-            .then(data => {
-                allCoins = data;
-                console.log("Loaded", allCoins.length, "coins from coins.json");
-            })
-            .catch(err => console.error("Error loading coins:", err));
-
-        // 2) Filter coins as user types, show matches
-        function searchCoins() {
-            const query = document.getElementById('cryptoSearch').value.toLowerCase();
-            const resultsList = document.getElementById('searchResults');
-            resultsList.innerHTML = ''; // clear old results
-
-            if (!query) {
-                // If user cleared input, also clear hidden symbol value
-                document.getElementById('cryptoSymbol').value = '';
-                return;
-            }
-
-            // We'll limit to e.g. 10 matches
-            const filtered = allCoins
-                .filter(c => c.name.toLowerCase().includes(query) || c.symbol.toLowerCase().includes(query))
-                .slice(0, 10);
-
-            filtered.forEach(coin => {
-                const li = document.createElement('li');
-                li.style.listStyle = 'none';
-                li.style.padding = '4px';
-                li.style.cursor = 'pointer';
-
-                // For display, we might do something like: "Bitcoin (btc)"
-                li.textContent = `${coin.name} (${coin.symbol})`;
-
-                // When a user clicks a result:
-                li.onclick = () => {
-                    // Set the visible text box to the coin name (just for reference)
-                    document.getElementById('cryptoSearch').value = coin.name;
-                    // But set the hidden "symbol" input to coin.id so it gets posted
-                    document.getElementById('cryptoSymbol').value = coin.id;
-                    // Clear the dropdown
-                    resultsList.innerHTML = '';
-                };
-
-                resultsList.appendChild(li);
-            });
-        }
-    </script>
-
-    <label>Threshold:</label>
-    <input name="threshold" type="text" value=""/>
-    <br/>
-    <label>Direction:</label>
-    <select name="direction">
-        <option value="above">Above</option>
-        <option value="below">Below</option>
-    </select>
-    <br/>
-    <button type="submit">Create Alert</button>
-</form>
-<script>
-    function fetchAlerts() {
-        fetch('/alerts')  // GET /alerts
-            .then(resp => {
-                if (!resp.ok) throw new Error('Failed to fetch alerts. Status=' + resp.status)
-                return resp.text()
-            })
-            .then(html => {
-                // The entire alerts page HTML will come back.
-                // In a real app, you might want a JSON endpoint instead,
-                // but let's do a quick hack:
-                // We'll parse the HTML to extract the relevant parts (Active Alerts, Triggered, etc.)
-                // Easiest might be to re-render entire #active-alerts / #triggered-alerts
-                // but you'd need to do some DOM parsing or have a dedicated JSON endpoint.
-                document.getElementById('status').textContent = ''
-
-                // Simple approach: if you had a separate endpoint that returned JSON:
-                //   .then(alertsData => {
-                //       updateAlerts(alertsData.active, alertsData.triggered, alertsData.notifications)
-                //   })
-                // For now, let's just set some "last update" timestamp:
-                document.getElementById('last-update').textContent = new Date().toLocaleTimeString()
-            })
-            .catch(err => {
-                console.error('Fetch Alerts Error:', err)
-                document.getElementById('status').textContent = 'Error fetching alerts. Check console.'
-            })
+<style>
+    /* Dark mode overall styles */
+    body {
+        background-color: #1e1e1e;
+        color: #f0f0f0;
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
     }
 
-    // 1) Establish SSE connection
-    const evtSource = new EventSource('/alerts/stream');
+    h2, h3 {
+        color: #ffca28;
+        margin-top: 0;
+    }
 
-    // 2) On message, re-fetch alerts
+    /* Create Alert form styling */
+    .form-container {
+        background: #2c2c2c;
+        padding: 16px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #444;
+        border-radius: 4px;
+        background: #2c2c2c;
+        color: #f0f0f0;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #ffca28;
+    }
+
+    /* Search results styling */
+    #searchResults {
+        border: 1px solid #444;
+        max-height: 150px;
+        overflow: auto;
+        padding: 0;
+        list-style: none;
+        margin: 0;
+    }
+    #searchResults li {
+        padding: 6px 10px;
+        cursor: pointer;
+        border-bottom: 1px solid #333;
+    }
+    #searchResults li:hover {
+        background: #444;
+    }
+
+    /* Submit button styling */
+    .btn-submit {
+        background: #ffca28;
+        color: #333;
+        font-weight: bold;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .btn-submit:hover {
+        background: #ffd95a;
+    }
+
+    hr {
+        border: none;
+        border-top: 1px solid #444;
+        margin: 20px 0;
+    }
+
+    /* Existing alerts display sections (unchanged from prior example) */
+    .alerts-section {
+        margin-bottom: 20px;
+    }
+    .alert-item {
+        background: #2c2c2c;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    .alert-symbol {
+        font-weight: bold;
+        font-size: 1.1em;
+        margin-bottom: 4px;
+    }
+    .alert-details {
+        font-size: 0.9em;
+        color: #ccc;
+    }
+    .timestamp {
+        color: #888;
+        font-size: 0.85em;
+    }
+
+    #last-update {
+        font-weight: bold;
+    }
+
+    #status {
+        color: #f44;
+    }
+</style>
+<body>
+
+<h2>Create New Alert</h2>
+
+<!-- If we have errors, display them here -->
+{{if .Errors}}
+<div style="background:#f66; color:white; padding:8px; margin-bottom:10px;">
+    <strong>Errors:</strong>
+    <ul>
+        {{range .Errors}}
+        <li>{{.}}</li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
+
+<div class="form-container">
+    <form action="/alerts" method="POST" id="alertForm">
+
+        <!-- Asset Type -->
+        <div class="form-group">
+            <label for="assetType">Asset Type</label>
+            <select name="assetType" id="assetType" class="form-control">
+                <option value="crypto" {{if eq .FormAssetType "crypto"}}selected{{end}}>Crypto</option>
+                <option value="metal"  {{if eq .FormAssetType "metal"}}selected{{end}}>Metal</option>
+                <option value="stock"  {{if eq .FormAssetType "stock"}}selected{{end}}>Stock</option>
+            </select>
+        </div>
+
+        <!-- Symbol Search -->
+        <div class="form-group">
+            <label for="cryptoSearch">Symbol (search by name or symbol)</label>
+            <!-- Show the typed symbol name in the search box (if user typed it) -->
+            <input id="cryptoSearch" oninput="searchCoins()" type="text"
+                   class="form-control" placeholder="e.g. Bitcoin, BTC..."
+                   value="{{.FormSymbol}}">
+            <input id="cryptoSymbol" name="symbol" type="hidden" value="{{.FormSymbol}}"/>
+            <ul id="searchResults"></ul>
+        </div>
+
+        <!-- Threshold -->
+        <div class="form-group">
+            <label for="threshold">Threshold</label>
+            <input name="threshold" id="threshold" type="number" step="any" class="form-control"
+                   placeholder="Enter numeric value e.g. 20000"
+                   value="{{.FormThreshold}}">
+        </div>
+
+        <!-- Direction -->
+        <div class="form-group">
+            <label for="direction">Direction</label>
+            <select name="direction" id="direction" class="form-control">
+                <option value="above" {{if eq .FormDirection "above"}}selected{{end}}>Above</option>
+                <option value="below" {{if eq .FormDirection "below"}}selected{{end}}>Below</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-submit">Create Alert</button>
+    </form>
+</div>
+
+<hr/>
+
+<div id="alerts-container">
+    {{template "alertsPartial" .}}
+</div>
+
+<p>Last update: <span id="last-update"></span></p>
+<p id="status"></p>
+<script>
+    // -----------------------------------------------------
+    // Searching + Autocomplete for crypto (unchanged logic)
+    // -----------------------------------------------------
+
+    let allCoins = [];
+
+    // 1) Fetch coins.json on page load
+    fetch('/data/coins.json')
+        .then(response => response.json())
+        .then(data => {
+            allCoins = data;
+            console.log("Loaded", allCoins.length, "coins from coins.json");
+        })
+        .catch(err => console.error("Error loading coins:", err));
+
+    // 2) Filter coins as user types, show matches
+    function searchCoins() {
+        const query = document.getElementById('cryptoSearch').value.toLowerCase();
+        const resultsList = document.getElementById('searchResults');
+        resultsList.innerHTML = ''; // clear old results
+
+        if (!query) {
+            // If user cleared input, also clear hidden symbol value
+            document.getElementById('cryptoSymbol').value = '';
+            return;
+        }
+
+        // We'll limit to e.g. 10 matches
+        const filtered = allCoins
+            .filter(c => c.name.toLowerCase().includes(query) || c.symbol.toLowerCase().includes(query))
+            .slice(0, 10);
+
+        filtered.forEach(coin => {
+            const li = document.createElement('li');
+            li.textContent = `${coin.name} (${coin.symbol})`;
+            li.onclick = () => {
+                document.getElementById('cryptoSearch').value = coin.name;
+                // Hidden field gets the real ID
+                document.getElementById('cryptoSymbol').value = coin.id;
+                resultsList.innerHTML = '';
+            };
+            resultsList.appendChild(li);
+        });
+    }
+
+    // -----------------------------------------------------
+    // SSE + Refresh logic
+    // -----------------------------------------------------
+    function refreshAlertsHTML() {
+        fetch('/alerts/partial')
+            .then(resp => {
+                if (!resp.ok) throw new Error('Failed to fetch partial. Status=' + resp.status);
+                return resp.text();
+            })
+            .then(html => {
+                document.getElementById('alerts-container').innerHTML = html;
+                document.getElementById('status').textContent = '';
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+            })
+            .catch(err => {
+                console.error('Refresh Alerts Error:', err);
+                document.getElementById('status').textContent = 'Error refreshing alerts. Check console.';
+            });
+    }
+
+    const evtSource = new EventSource('/alerts/stream');
     evtSource.onmessage = (event) => {
         console.log('SSE event received:', event.data);
         let data;
@@ -156,21 +266,15 @@
             console.error('Invalid JSON from SSE:', e);
             return;
         }
-
-        // If type=alertsUpdated, refresh
         if (data.type === 'alertsUpdated') {
-            fetchAlerts();
+            refreshAlertsHTML();
         }
     };
-
-    // 3) Handle errors
     evtSource.onerror = (event) => {
         console.error('SSE Error:', event);
         document.getElementById('status').textContent = 'Connection lost! Try refreshing.';
     };
-
-    // 4) Initial fetch
-    fetchAlerts();
 </script>
 </body>
 </html>
+{{end}}

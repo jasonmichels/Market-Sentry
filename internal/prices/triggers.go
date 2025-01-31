@@ -2,10 +2,11 @@ package prices
 
 import (
 	"fmt"
-	"github.com/jasonmichels/Market-Sentry/internal/sse"
 	"log"
+	"strings"
 	"time"
 
+	"github.com/jasonmichels/Market-Sentry/internal/sse"
 	"github.com/jasonmichels/Market-Sentry/internal/storage"
 )
 
@@ -41,23 +42,26 @@ func TriggerAlerts(store *storage.MemoryStore, hub *sse.SSEHub) {
 			}
 
 			if triggered {
-				log.Printf("[Alert Trigger] Phone=%s Symbol=%s Price=%.2f Threshold=%.2f Above=%t",
+				log.Printf("[Alert Trigger] Phone=%s Symbol=%s Price=%.4f Threshold=%.4f Above=%t",
 					phone, alert.Symbol, price, alert.Threshold, alert.Above)
 
 				triggeredMap[phone] = append(triggeredMap[phone], alert.ID)
 
-				// Build a notification
-				msg := ""
+				// Build a notification message. E.g.: "BTC went above $20,000.00"
+				formattedThreshold := formatUSD(alert.Threshold)
 				if alert.Above {
-					msg = fmt.Sprintf("%s went above %.2f", alert.Symbol, alert.Threshold)
+					notificationsMap[phone] = append(notificationsMap[phone], storage.Notification{
+						AlertID:   alert.ID,
+						Timestamp: time.Now(),
+						Message:   fmt.Sprintf("%s went above %s", alert.Symbol, formattedThreshold),
+					})
 				} else {
-					msg = fmt.Sprintf("%s went below %.2f", alert.Symbol, alert.Threshold)
+					notificationsMap[phone] = append(notificationsMap[phone], storage.Notification{
+						AlertID:   alert.ID,
+						Timestamp: time.Now(),
+						Message:   fmt.Sprintf("%s went below %s", alert.Symbol, formattedThreshold),
+					})
 				}
-				notificationsMap[phone] = append(notificationsMap[phone], storage.Notification{
-					AlertID:   alert.ID,
-					Timestamp: time.Now(),
-					Message:   msg,
-				})
 			}
 		}
 	}
@@ -92,11 +96,10 @@ func TriggerAlerts(store *storage.MemoryStore, hub *sse.SSEHub) {
 		// Add new notifications
 		notes := notificationsMap[phone]
 		user.Notifications = append(user.Notifications, notes...)
+
+		// Notify only that user
+		hub.BroadcastToUser(phone, `{"type":"alertsUpdated","message":"Alerts updated"}`)
 	}
-
-	// >>> BROADCAST after updates done
-	hub.Broadcast(`{"type":"alertsUpdated","message":"Alerts updated"}`)
-
 }
 
 // getPriceForAlert returns the relevant price for the alert from the store
@@ -110,4 +113,24 @@ func getPriceForAlert(alert storage.Alert, crypto map[string]float64, metals map
 		return stocks[alert.Symbol]
 	}
 	return 0
+}
+
+func formatUSD(amount float64) string {
+	switch {
+	case amount >= 1:
+		// For amounts 1 or more, use two decimals.
+		return fmt.Sprintf("$%.2f", amount)
+	case amount == 0:
+		return "$0.00"
+	default:
+		// For tiny numbers, if the value is less than 1e-8, use scientific notation.
+		if amount < 1e-8 {
+			return fmt.Sprintf("$%.2e", amount)
+		}
+		// Otherwise, format with up to 8 decimals, trimming trailing zeros.
+		s := fmt.Sprintf("%.8f", amount)
+		s = strings.TrimRight(s, "0")
+		s = strings.TrimRight(s, ".")
+		return "$" + s
+	}
 }

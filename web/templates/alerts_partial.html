@@ -1,0 +1,62 @@
+{{define "alertsPartial"}}
+<div class="alerts-section">
+    <h3>Active Alerts</h3>
+    {{if .User.ActiveAlerts}}
+    {{range .User.ActiveAlerts}}
+    <div class="alert-item">
+        <div class="alert-symbol">{{.Symbol | printf "%.12s"}} Alert
+            <!-- e.g. limit symbol display if it's too long -->
+        </div>
+        <div class="alert-details">
+            Threshold: <strong>{{.Threshold}}</strong>
+            ({{if .Above}}Above{{else}}Below{{end}})
+            <br/>
+            <!-- Show last known price or "Updating..." if zero -->
+            {{ $price := index $.Crypto .Symbol }}
+            Last Price:
+            {{if eq $price 0.0}}
+            <em>Updating...</em>
+            {{else}}
+            ${{$price | printf "%.2f"}}
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+    {{else}}
+    <p>No active alerts.</p>
+    {{end}}
+</div>
+
+<div class="alerts-section">
+    <h3>Triggered Alerts</h3>
+    {{if .User.TriggeredAlerts}}
+    {{range .User.TriggeredAlerts}}
+    <div class="alert-item">
+        <div class="alert-symbol">{{.Symbol}} Triggered</div>
+        <div class="alert-details">
+            Threshold was {{.Threshold}} ({{if .Above}}Above{{else}}Below{{end}}).
+        </div>
+    </div>
+    {{end}}
+    {{else}}
+    <p>No triggered alerts.</p>
+    {{end}}
+</div>
+
+<div class="alerts-section">
+    <h3>Notifications</h3>
+    {{if .User.Notifications}}
+    {{range .User.Notifications}}
+    <div class="alert-item">
+        <div class="alert-details">
+            <span class="timestamp">{{.Timestamp | formatTime}}</span>
+            <br/>
+            {{.Message}}
+        </div>
+    </div>
+    {{end}}
+    {{else}}
+    <p>No notifications.</p>
+    {{end}}
+</div>
+{{end}}

@@ -36,17 +36,19 @@ type MemoryStore struct {
 	Users map[string]*User
 
 	// Price data (updated every 10 min)
-	Crypto map[string]float64
-	Metals map[string]float64
-	Stocks map[string]float64
+	Crypto         map[string]float64
+	Metals         map[string]float64
+	Stocks         map[string]float64
+	SupportedCoins map[string]bool
 }
 
-func NewMemoryStore() *MemoryStore {
+func NewMemoryStore(sc map[string]bool) *MemoryStore {
 	return &MemoryStore{
-		Users:  make(map[string]*User),
-		Crypto: make(map[string]float64),
-		Metals: make(map[string]float64),
-		Stocks: make(map[string]float64),
+		Users:          make(map[string]*User),
+		Crypto:         make(map[string]float64),
+		Metals:         make(map[string]float64),
+		Stocks:         make(map[string]float64),
+		SupportedCoins: sc,
 	}
 }
 
