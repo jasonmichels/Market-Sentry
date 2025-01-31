@@ -34,6 +34,8 @@ func CreateAlert(store *storage.MemoryStore, phone, assetType, symbol, threshold
 	}
 
 	user.ActiveAlerts = append(user.ActiveAlerts, alert)
+
+	user.CountActiveAlerts++
 }
 
 // generateAlertID

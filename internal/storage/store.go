@@ -11,10 +11,12 @@ type User struct {
 	OneTimeCodeExpires time.Time
 
 	// Active and triggered alerts
-	ActiveAlerts    []Alert
-	TriggeredAlerts []Alert
-
-	Notifications []Notification
+	ActiveAlerts         []Alert
+	TriggeredAlerts      []Alert
+	Notifications        []Notification
+	CountActiveAlerts    int
+	CountTriggeredAlerts int
+	CountNotifications   int
 }
 
 type Alert struct {

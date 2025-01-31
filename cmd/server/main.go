@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	// Standard Go Modules
@@ -24,7 +25,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+var adminPhones = make(map[string]bool)
+
 func main() {
+	adminEnv := os.Getenv("ADMIN_PHONES")
+	if adminEnv != "" {
+		// Split by comma
+		for _, p := range strings.Split(adminEnv, ",") {
+			adminPhones[strings.TrimSpace(p)] = true
+		}
+	}
+
 	// Load all supported coin IDs from coins.json
 	supportedCoins, err := loadSupportedCoins("web/data/coins.json")
 	if err != nil {
@@ -77,6 +88,11 @@ func main() {
 	// Protected route: returns just the HTML partial for alerts/notifications
 	http.Handle("/alerts/partial", auth.JWTMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handleAlertsPartial(store, w, r)
+	})))
+
+	// Protected route (JWT) for admin
+	http.Handle("/admin", auth.JWTMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleAdmin(store, w, r)
 	})))
 
 	log.Println("Starting server on :8080")
@@ -132,7 +148,7 @@ func makeHandler(store *storage.MemoryStore, fn func(*storage.MemoryStore, http.
 
 // handleHome - display a simple home page with a link to login
 func handleHome(store *storage.MemoryStore, w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("web/templates/login.html"))
+	tmpl := template.Must(template.ParseFiles("web/templates/index.html"))
 	_ = tmpl.Execute(w, nil)
 }
 
@@ -155,9 +171,8 @@ func handleLogin(store *storage.MemoryStore, w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Render basic form to collect phone number
-	tmpl := template.Must(template.ParseFiles("web/templates/login.html"))
-	_ = tmpl.Execute(w, nil)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return
 }
 
 // handleVerify - user enters the one-time code
@@ -382,5 +397,75 @@ func handleAlertsPartial(store *storage.MemoryStore, w http.ResponseWriter, r *h
 	if err := tmpl.ExecuteTemplate(w, "alertsPartial", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+func handleAdmin(store *storage.MemoryStore, w http.ResponseWriter, r *http.Request) {
+	phone := auth.GetUserPhone(r.Context())
+	// 1) Check if phone is in adminPhones
+	if !adminPhones[phone] {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// 2) Parse the page param
+	pageStr := r.URL.Query().Get("page")
+	pageNum, err := strconv.Atoi(pageStr)
+	if err != nil || pageNum < 1 {
+		pageNum = 1
+	}
+
+	const pageSize = 100
+
+	store.Mu.RLock()
+	// Convert map to slice for pagination
+	userList := make([]*storage.User, 0, len(store.Users))
+	for _, u := range store.Users {
+		userList = append(userList, u)
+	}
+	totalUsers := len(userList)
+	store.Mu.RUnlock()
+
+	// Sort by phone or whatever if you like
+	// (omitted for brevity, but you might do sort.Slice(...) if needed)
+
+	// 3) Calculate start/end
+	start := (pageNum - 1) * pageSize
+	if start > totalUsers {
+		start = totalUsers
+	}
+	end := start + pageSize
+	if end > totalUsers {
+		end = totalUsers
+	}
+	pageUsers := userList[start:end]
+
+	// 4) Build a data struct for the template
+	data := struct {
+		CurrentPage int
+		PageSize    int
+		TotalUsers  int
+		Users       []*storage.User
+	}{
+		CurrentPage: pageNum,
+		PageSize:    pageSize,
+		TotalUsers:  totalUsers,
+		Users:       pageUsers,
+	}
+
+	// Create a function map with "sub", "add", "mul", etc.
+	funcs := template.FuncMap{
+		"sub": func(a, b int) int { return a - b },
+		"add": func(a, b int) int { return a + b },
+		"mul": func(a, b int) int { return a * b },
+	}
+
+	tmpl := template.Must(template.New("admin.html").
+		Funcs(funcs).
+		ParseFiles("web/templates/admin.html"))
+
+	if err := tmpl.Execute(w, data); err != nil {
+		log.Printf("Error executing admin template: %v", err)
+		http.Error(w, "Server error", http.StatusInternalServerError)
 	}
 }

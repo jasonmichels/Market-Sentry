@@ -83,12 +83,15 @@ func TriggerAlerts(store *storage.MemoryStore, hub *sse.SSEHub) {
 			for _, trigID := range alertIDs {
 				if a.ID == trigID {
 					user.TriggeredAlerts = append(user.TriggeredAlerts, a)
+					user.CountTriggeredAlerts++
 					triggered = true
 					break
 				}
 			}
 			if !triggered {
 				remaining = append(remaining, a)
+			} else {
+				user.CountActiveAlerts--
 			}
 		}
 		user.ActiveAlerts = remaining
@@ -96,6 +99,7 @@ func TriggerAlerts(store *storage.MemoryStore, hub *sse.SSEHub) {
 		// Add new notifications
 		notes := notificationsMap[phone]
 		user.Notifications = append(user.Notifications, notes...)
+		user.CountNotifications += len(notes)
 
 		// Notify only that user
 		hub.BroadcastToUser(phone, `{"type":"alertsUpdated","message":"Alerts updated"}`)

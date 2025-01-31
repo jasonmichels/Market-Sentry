@@ -1,13 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Verify Phone</title>
+    <style>
+        /* Basic Reset & Dark Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #f0f0f0;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        a {
+            color: #ffca28;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Navigation Bar */
+        .nav {
+            background: #2c2c2c;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        .nav a {
+            font-weight: bold;
+            margin-right: 20px;
+        }
+
+        h2 {
+            color: #ffca28;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+        }
+
+        .verify-container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #2c2c2c;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .verify-container label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #ffca28;
+        }
+        .verify-container input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #666;
+            border-radius: 4px;
+            background: #1e1e1e;
+            color: #f0f0f0;
+        }
+        .verify-container input[type="text"]:focus {
+            outline: none;
+            border-color: #ffca28;
+        }
+        .verify-container button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #ffca28;
+            color: #333;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-weight: bold;
+        }
+        .verify-container button:hover {
+            background: #ffd95a;
+        }
+    </style>
 </head>
 <body>
-<h2>Enter verification code</h2>
-<form action="/login/verify?phone={{.Phone}}" method="POST">
-    Code: <input name="code" type="text"/>
-    <button type="submit">Verify</button>
-</form>
+
+<!-- Simple navigation -->
+<div class="nav">
+    <a href="/">Market Sentry Home</a>
+</div>
+
+<h2>Verify Your Phone</h2>
+
+<div class="verify-container">
+    <form action="/login/verify?phone={{.Phone}}" method="POST">
+        <label for="code">Enter Verification Code:</label>
+        <input id="code" name="code" type="text" placeholder="e.g. 123456" />
+        <button type="submit">Verify</button>
+    </form>
+</div>
+
 </body>
 </html>
