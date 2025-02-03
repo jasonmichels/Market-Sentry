@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -59,10 +60,13 @@ func RegisterAuthRoutes(mux *http.ServeMux, store *storage.MemoryStore) {
 			}
 
 			// --- RATE LIMITING USING go-rate ---
-			limiter := utils.GetLoginLimiter(phone)
-			if !limiter.Allow() {
-				http.Error(w, "Too many login attempts. Please try again later.", http.StatusTooManyRequests)
-				return
+			environment := os.Getenv("ENVIRONMENT")
+			if environment != "local" {
+				limiter := utils.GetLoginLimiter(phone)
+				if !limiter.Allow() {
+					http.Error(w, "Too many login attempts. Please try again later.", http.StatusTooManyRequests)
+					return
+				}
 			}
 			// --- END RATE LIMITING ---
 
