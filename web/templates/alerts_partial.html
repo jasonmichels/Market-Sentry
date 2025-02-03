@@ -28,22 +28,6 @@
 </div>
 
 <div class="alerts-section">
-    <h3>Triggered Alerts</h3>
-    {{if .User.TriggeredAlerts}}
-    {{range .User.TriggeredAlerts}}
-    <div class="alert-item">
-        <div class="alert-symbol">{{.Symbol}} Triggered</div>
-        <div class="alert-details">
-            Threshold was {{.Threshold}} ({{if .Above}}Above{{else}}Below{{end}}).
-        </div>
-    </div>
-    {{end}}
-    {{else}}
-    <p>No triggered alerts.</p>
-    {{end}}
-</div>
-
-<div class="alerts-section">
     <h3>Notifications</h3>
     {{if .User.Notifications}}
     {{range .User.Notifications}}

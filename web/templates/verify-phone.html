@@ -98,8 +98,8 @@
 <h2>Verify Your Phone</h2>
 
 <div class="verify-container">
-    <form action="/login/verify?phone={{.Phone}}" method="POST">
-        <label for="code">Enter Verification Code:</label>
+    <form action="/login/verify?phone={{.Phone | urlquery}}" method="POST">
+    <label for="code">Enter Verification Code:</label>
         <input id="code" name="code" type="text" placeholder="e.g. 123456" />
         <button type="submit">Verify</button>
     </form>

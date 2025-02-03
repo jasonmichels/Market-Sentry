@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # --------------------------------------
   #  Market Sentry Service
@@ -16,6 +14,11 @@ services:
       - monitoring
     environment:
       - ADMIN_PHONES=
+      - TWILIO_ACCOUNT_SID=
+      - TWILIO_AUTH_TOKEN=
+      - TWILIO_FROM_NUMBER=
+      - ENVIRONMENT=local
+      - TWILIO_ENABLED=false
 
   # --------------------------------------
   #  Prometheus

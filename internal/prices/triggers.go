@@ -47,19 +47,22 @@ func TriggerAlerts(store *storage.MemoryStore, hub *sse.SSEHub) {
 
 				triggeredMap[phone] = append(triggeredMap[phone], alert.ID)
 
-				// Build a notification message. E.g.: "BTC went above $20,000.00"
+				// Format the threshold and current price
 				formattedThreshold := formatUSD(alert.Threshold)
+				formattedPrice := formatUSD(price)
+
+				// Build a notification message that includes the current price
 				if alert.Above {
 					notificationsMap[phone] = append(notificationsMap[phone], storage.Notification{
 						AlertID:   alert.ID,
 						Timestamp: time.Now(),
-						Message:   fmt.Sprintf("%s went above %s", alert.Symbol, formattedThreshold),
+						Message:   fmt.Sprintf("%s went above %s (current price: %s)", alert.Symbol, formattedThreshold, formattedPrice),
 					})
 				} else {
 					notificationsMap[phone] = append(notificationsMap[phone], storage.Notification{
 						AlertID:   alert.ID,
 						Timestamp: time.Now(),
-						Message:   fmt.Sprintf("%s went below %s", alert.Symbol, formattedThreshold),
+						Message:   fmt.Sprintf("%s went below %s (current price: %s)", alert.Symbol, formattedThreshold, formattedPrice),
 					})
 				}
 			}

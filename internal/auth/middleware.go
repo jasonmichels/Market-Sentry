@@ -18,7 +18,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 		var tokenStr string
 
 		// Prefer reading from Cookie
-		cookie, err := r.Cookie("token")
+		cookie, err := r.Cookie("marketsentry")
 		if err == nil {
 			log.Printf("[Auth] Found 'token' cookie")
 			tokenStr = cookie.Value

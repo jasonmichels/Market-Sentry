@@ -161,14 +161,15 @@
             border-radius: 6px;
             border: 1px solid #444;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            text-align: left;
         }
         .login-container label {
             display: block;
-            text-align: left;
             margin: 10px 0 5px 0;
             font-weight: bold;
             color: #ffca28;
         }
+        .login-container select,
         .login-container input[type="text"] {
             width: 100%;
             padding: 10px;
@@ -177,10 +178,16 @@
             border-radius: 4px;
             background: #2c2c2c;
             color: #f0f0f0;
+            margin-bottom: 10px;
         }
-        .login-container input[type="text"]:focus {
+        .login-container input[type="text"]:focus,
+        .login-container select:focus {
             outline: none;
             border-color: #ffca28;
+        }
+        /* Add red border for invalid phone input */
+        .login-container input.invalid {
+            border: 1px solid red;
         }
         .login-container button {
             margin-top: 15px;
@@ -283,9 +290,19 @@
     <h2>Create Your Account</h2>
     <p>Sign up on the Free Plan now and upgrade anytime to unlock premium features.</p>
     <div class="login-container">
-        <form action="/login" method="POST">
-            <label for="phone">Phone:</label>
-            <input id="phone" name="phone" type="text" placeholder="(555) 123-4567" />
+        <form action="/login" method="POST" id="loginForm">
+            <!-- Country Code Dropdown -->
+            <label for="country">Country Code:</label>
+            <select id="country" name="country" class="form-control">
+                <option value="+1" selected>United States (+1)</option>
+                <option value="+1">Canada (+1)</option>
+                <option value="+44">United Kingdom (+44)</option>
+                <option value="+61">Australia (+61)</option>
+                <option value="+91">India (+91)</option>
+            </select>
+            <!-- Phone Input -->
+            <label for="phone">Phone Number:</label>
+            <input id="phone" name="phone" type="text" placeholder="Enter digits only (do not include country code or special characters)" />
             <button type="submit">Get Code</button>
         </form>
     </div>
@@ -295,6 +312,37 @@
 <footer>
     &copy; <script>document.write(new Date().getFullYear());</script> Market Sentry - All Rights Reserved
 </footer>
+
+<script>
+    // JavaScript to validate phone input in real time.
+    // We expect the phone input to contain only digits and be between 7 and 15 digits.
+    const phoneInput = document.getElementById('phone');
+
+    phoneInput.addEventListener('input', function() {
+        // Remove any non-digit characters
+        // (Alternatively, you can simply check and show error)
+        const value = phoneInput.value;
+        // A simple regex to allow only digits (and length between 7 and 15)
+        const phonePattern = /^\d{7,15}$/;
+        if (!phonePattern.test(value)) {
+            phoneInput.classList.add('invalid');
+        } else {
+            phoneInput.classList.remove('invalid');
+        }
+    });
+
+    // Optionally, prevent form submission if phone is invalid.
+    const loginForm = document.getElementById('loginForm');
+    loginForm.addEventListener('submit', function(e) {
+        const value = phoneInput.value;
+        const phonePattern = /^\d{7,15}$/;
+        if (!phonePattern.test(value)) {
+            e.preventDefault();
+            alert("Please enter a valid phone number with digits only (7-15 digits) without country code.");
+            phoneInput.focus();
+        }
+    });
+</script>
 
 </body>
 </html>
